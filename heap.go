@@ -90,6 +90,18 @@ func (h *Heap[T]) Push(value T) *Heap[T] {
 	return h
 }
 
+// PushPop pushes value onto the heap and then pops the lowest value off the
+// heap and returns it in O(N) time. It is slightly more efficient that separate
+// calls to Push and Pop.
+func (h *Heap[T]) PushPop(value T) T {
+	if len(h.values) == 0 || h.lessFunc(value, h.values[0]) {
+		return value
+	}
+	value, h.values[0] = h.values[0], value
+	h.siftDown(0)
+	return value
+}
+
 // Set sets the values on h to be values in amortized O(N) time. h takes
 // ownership of values.
 func (h *Heap[T]) Set(values []T) *Heap[T] {

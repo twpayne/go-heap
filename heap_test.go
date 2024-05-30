@@ -143,6 +143,18 @@ func TestSet(t *testing.T) {
 	}
 }
 
+func TestPushPop(t *testing.T) {
+	h := heap.NewOrderedHeap[int]()
+	assert.Equal(t, 1, h.PushPop(1))
+	h.Push(2)
+	assert.Equal(t, 1, h.PushPop(1))
+	assert.Equal(t, 2, h.PushPop(3))
+	h.Push(5)
+	h.Push(4)
+	h.Push(6)
+	assert.Equal(t, []int{3, 4, 5, 6}, popAll(t, h))
+}
+
 func popAll[T any](t *testing.T, h *heap.Heap[T]) []T {
 	t.Helper()
 
