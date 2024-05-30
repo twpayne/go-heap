@@ -106,7 +106,7 @@ func TestRandomPermutations(t *testing.T) {
 				for _, value := range values {
 					h.Push(value)
 				}
-				assert.Equal(t, expected, popAll(t, h))
+				assert.Equal(t, expected, h.PopAll())
 			})
 
 			slices.Reverse(expected)
@@ -115,7 +115,7 @@ func TestRandomPermutations(t *testing.T) {
 				for _, value := range values {
 					h.Push(value)
 				}
-				assert.Equal(t, expected, popAll(t, h))
+				assert.Equal(t, expected, h.PopAll())
 			})
 		})
 	}
@@ -137,7 +137,7 @@ func TestSet(t *testing.T) {
 		h.Set(values)
 		expected := slices.Clone(values)
 		slices.Sort(expected)
-		assert.Equal(t, expected, popAll(t, h))
+		assert.Equal(t, expected, h.PopAll())
 	}
 }
 
@@ -148,19 +148,5 @@ func TestPushPop(t *testing.T) {
 	assert.Equal(t, 1, h.PushPop(1))
 	assert.Equal(t, 2, h.PushPop(3))
 	h.PushMany(5, 4, 6)
-	assert.Equal(t, []int{3, 4, 5, 6}, popAll(t, h))
-}
-
-func popAll[T any](t *testing.T, h *heap.Heap[T]) []T {
-	t.Helper()
-
-	n := h.Len()
-	result := make([]T, 0, n)
-	for i := 0; i < n; i++ {
-		value, ok := h.Pop()
-		assert.True(t, ok)
-		result = append(result, value)
-	}
-
-	return result
+	assert.Equal(t, []int{3, 4, 5, 6}, h.PopAll())
 }

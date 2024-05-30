@@ -83,6 +83,17 @@ func (h *Heap[T]) Pop() (T, bool) {
 	}
 }
 
+// PopAll pops and returns all values in h.
+func (h *Heap[T]) PopAll() []T {
+	n := len(h.values)
+	values := make([]T, 0, n)
+	for i := 0; i < n; i++ {
+		value, _ := h.Pop()
+		values = append(values, value)
+	}
+	return values
+}
+
 // Push adds value to h in amortized O(N) time.
 func (h *Heap[T]) Push(value T) *Heap[T] {
 	h.values = append(h.values, value)
