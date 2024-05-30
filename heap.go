@@ -90,6 +90,16 @@ func (h *Heap[T]) Push(value T) *Heap[T] {
 	return h
 }
 
+// PushMany pushes multiple values onto the heap.
+func (h *Heap[T]) PushMany(values ...T) *Heap[T] {
+	n := len(h.values)
+	h.values = append(h.values, values...)
+	for i := range values {
+		h.siftUp(n + i)
+	}
+	return h
+}
+
 // PushPop pushes value onto the heap and then pops the lowest value off the
 // heap and returns it in O(N) time. It is slightly more efficient that separate
 // calls to Push and Pop.

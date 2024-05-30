@@ -72,9 +72,7 @@ func TestThreeElements(t *testing.T) {
 
 	h := heap.NewOrderedHeap[uint]()
 
-	h.Push(3)
-	h.Push(2)
-	h.Push(1)
+	h.PushMany(3, 2, 1)
 
 	assert.False(t, h.Empty())
 	assert.Equal(t, 3, h.Len())
@@ -149,9 +147,7 @@ func TestPushPop(t *testing.T) {
 	h.Push(2)
 	assert.Equal(t, 1, h.PushPop(1))
 	assert.Equal(t, 2, h.PushPop(3))
-	h.Push(5)
-	h.Push(4)
-	h.Push(6)
+	h.PushMany(5, 4, 6)
 	assert.Equal(t, []int{3, 4, 5, 6}, popAll(t, h))
 }
 
