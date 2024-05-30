@@ -48,6 +48,11 @@ func (h *Heap[T]) Grow(n int) *Heap[T] {
 	return h
 }
 
+// Len returns the size of h in O(1) time and memory.
+func (h *Heap[T]) Len() int {
+	return len(h.values)
+}
+
 // Peek returns the lowest value in h in O(1) time and memory, without removing
 // it, and whether it exists.
 func (h *Heap[T]) Peek() (T, bool) {
@@ -93,11 +98,6 @@ func (h *Heap[T]) Set(values []T) *Heap[T] {
 		h.siftDown(index)
 	}
 	return h
-}
-
-// Len returns the size of h in O(1) time and memory.
-func (h *Heap[T]) Len() int {
-	return len(h.values)
 }
 
 // siftDown implements the sift down operation, moving the element at index
