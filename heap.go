@@ -37,6 +37,17 @@ func NewReverseOrderedHeap[T cmp.Ordered]() *Heap[T] {
 	})
 }
 
+// Cap returns the underlying capacity of h.
+func (h *Heap[T]) Cap() int {
+	return cap(h.values)
+}
+
+// Clip removes unused capacity from h.
+func (h *Heap[T]) Clip() *Heap[T] {
+	h.values = slices.Clip(h.values)
+	return h
+}
+
 // Empty returns whether h is empty in O(1) time and memory.
 func (h *Heap[T]) Empty() bool {
 	return len(h.values) == 0

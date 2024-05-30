@@ -150,3 +150,13 @@ func TestPushPop(t *testing.T) {
 	h.PushMany(5, 4, 6)
 	assert.Equal(t, []int{3, 4, 5, 6}, h.PopAll())
 }
+
+func TestCapAndClip(t *testing.T) {
+	h := heap.NewOrderedHeap[byte]()
+	assert.Zero(t, h.Cap())
+	h.Grow(16)
+	assert.Equal(t, 16, h.Cap())
+	h.Push(1)
+	h.Clip()
+	assert.Equal(t, 1, h.Cap())
+}
