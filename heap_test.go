@@ -160,3 +160,14 @@ func TestCapAndClip(t *testing.T) {
 	h.Clip()
 	assert.Equal(t, 1, h.Cap())
 }
+
+func TestMustPop(t *testing.T) {
+	h := heap.NewOrderedHeap[int]()
+	h.Push(1)
+	assert.NotPanics(t, func() {
+		assert.Equal(t, 1, h.MustPop())
+	})
+	assert.Panics(t, func() {
+		_ = h.MustPop()
+	})
+}

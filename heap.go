@@ -64,6 +64,15 @@ func (h *Heap[T]) Len() int {
 	return len(h.values)
 }
 
+// MustPop returns the lowest value in h. It panics if h is empty.
+func (h *Heap[T]) MustPop() T {
+	value, ok := h.Pop()
+	if !ok {
+		panic("empty heap")
+	}
+	return value
+}
+
 // Peek returns the lowest value in h in O(1) time and memory, without removing
 // it, and whether it exists.
 func (h *Heap[T]) Peek() (T, bool) {
