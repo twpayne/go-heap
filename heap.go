@@ -1,8 +1,6 @@
 // Package heaps implements a generic heap data structure.
 package heap
 
-// FIXME add support for rangefuncs see https://go.dev/wiki/RangefuncExperiment
-
 import (
 	"cmp"
 	"slices"
