@@ -6,6 +6,8 @@ package prioritychannel
 import "github.com/twpayne/go-heap"
 
 // A PriorityChannelOption sets an option on a PriorityChannel.
+//
+//nolint:revive
 type PriorityChannelOption[T any] func(*PriorityChannel[T])
 
 // WithLessFunc sets the lessFunc on a PriorityChannel.
@@ -54,7 +56,7 @@ func (c *PriorityChannel[T]) Run(destCh chan<- T, sourceCh <-chan T) {
 			} else {
 				valueToSend = heap.MustPop()
 			}
-			valueToSendValid = true
+			valueToSendValid = true //nolint:wastedassign
 		}
 
 		// Either send valueToSend to destCh or read a new value from sourceCh

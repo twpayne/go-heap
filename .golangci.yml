@@ -78,8 +78,6 @@ linters:
   disable:
   - cyclop
   - depguard
-  - exhaustivestruct
-  - exhaustruct
   - funlen
   - gochecknoglobals
   - gocognit
