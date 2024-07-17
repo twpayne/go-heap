@@ -22,14 +22,14 @@ func NewHeap[T any](lessFunc LessFunc[T]) *Heap[T] {
 	}
 }
 
-// NewOrderedHeap returns a new heap that operates on cmp.Ordered elements.
+// NewOrderedHeap returns a new heap that operates on [cmp.Ordered] elements.
 func NewOrderedHeap[T cmp.Ordered]() *Heap[T] {
 	return NewHeap(func(a, b T) bool {
 		return a < b
 	})
 }
 
-// NewReverseOrderedHeap returns a new heap that operates on cmp.Ordered
+// NewReverseOrderedHeap returns a new heap that operates on [cmp.Ordered]
 // elements in reverse order.
 func NewReverseOrderedHeap[T cmp.Ordered]() *Heap[T] {
 	return NewHeap(func(a, b T) bool {
@@ -132,8 +132,8 @@ func (h *Heap[T]) PushMany(values ...T) *Heap[T] {
 }
 
 // PushPop pushes value onto the heap and then pops the lowest value off the
-// heap and returns it in O(N) time. It is slightly more efficient that separate
-// calls to Push and Pop.
+// heap and returns it in O(N) time. It is slightly more efficient than separate
+// calls to [Heap.Push] and [Heap.Pop].
 func (h *Heap[T]) PushPop(value T) T {
 	if len(h.values) == 0 || h.lessFunc(value, h.values[0]) {
 		return value
