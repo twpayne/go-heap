@@ -1,6 +1,7 @@
 package heap_test
 
 import (
+	"math"
 	"math/rand/v2"
 	"slices"
 	"strconv"
@@ -170,4 +171,16 @@ func TestMustPop(t *testing.T) {
 	assert.Panics(t, func() {
 		_ = h.MustPop()
 	})
+}
+
+func TestHeapFloat64s(t *testing.T) {
+	h := heap.NewOrderedHeap[float64]()
+	h.PushMany(2, math.NaN(), 1, math.Copysign(0, -1), math.Copysign(0, 1), math.Inf(1), math.Inf(-1))
+	assert.True(t, math.IsNaN(h.MustPop()))
+	assert.Equal(t, math.Inf(-1), h.MustPop())
+	assert.Equal(t, math.Copysign(0, 1), h.MustPop())
+	assert.Equal(t, math.Copysign(0, -1), h.MustPop())
+	assert.Equal(t, 1, h.MustPop())
+	assert.Equal(t, 2, h.MustPop())
+	assert.Equal(t, math.Inf(1), h.MustPop())
 }
