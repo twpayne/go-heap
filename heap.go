@@ -24,16 +24,14 @@ func NewHeap[T any](lessFunc LessFunc[T]) *Heap[T] {
 
 // NewOrderedHeap returns a new heap that operates on [cmp.Ordered] elements.
 func NewOrderedHeap[T cmp.Ordered]() *Heap[T] {
-	return NewHeap(func(a, b T) bool {
-		return cmp.Compare(a, b) < 0
-	})
+	return NewHeap(cmp.Less[T])
 }
 
 // NewReverseOrderedHeap returns a new heap that operates on [cmp.Ordered]
 // elements in reverse order.
 func NewReverseOrderedHeap[T cmp.Ordered]() *Heap[T] {
 	return NewHeap(func(a, b T) bool {
-		return cmp.Compare(a, b) > 0
+		return cmp.Less[T](b, a)
 	})
 }
 
