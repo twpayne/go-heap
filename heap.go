@@ -105,7 +105,7 @@ func (h *Heap[T]) Pop() (T, bool) {
 func (h *Heap[T]) PopAll() []T {
 	n := len(h.values)
 	values := make([]T, 0, n)
-	for i := 0; i < n; i++ {
+	for range n {
 		value, _ := h.Pop()
 		values = append(values, value)
 	}

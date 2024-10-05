@@ -90,13 +90,13 @@ func TestRandomPermutations(t *testing.T) {
 
 	const N = 1024
 	r := rand.New(rand.NewPCG(1, 2))
-	for i := 0; i < N; i++ {
+	for i := range N {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
 
 			n := r.IntN(N)
 			values := make([]int, 0, n)
-			for i := 0; i < n; i++ {
+			for range n {
 				values = append(values, r.IntN(N))
 			}
 			expected := slices.Clone(values)
@@ -127,11 +127,11 @@ func TestSet(t *testing.T) {
 
 	const N = 1024
 	r := rand.New(rand.NewPCG(1, 2))
-	for i := 0; i < N; i++ {
+	for range N {
 		n := r.IntN(32)
 		h := heap.NewOrderedHeap[int]().Grow(n)
 		values := make([]int, 0, n)
-		for i := 0; i < n; i++ {
+		for range n {
 			value := r.IntN(N)
 			values = append(values, value)
 		}
