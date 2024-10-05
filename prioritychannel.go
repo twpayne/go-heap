@@ -1,57 +1,63 @@
 package heap
 
-// FIXME add channel sizes (min and max pending)
+// PriorityChannel greedily reads values from inCh and returns a channel that
+// returns the same values prioritized according to lessFunc, with lesser values
+// returned first. When inCh is closed, all remaining values are written to the
+// returned channel, and then the returned channel is closed.
+func PriorityChannel[T any](inCh <-chan T, lessFunc func(T, T) bool) <-chan T {
+	// FIXME add channel sizes (i.e. min and max heap size)
 
-// PriorityChannel copies values from sourceCh to destCh, prioritizing the
-// values according to lessFunc (lesser values are copied first), without any
-// limit on buffering. If sourceCh is closed then it writes all remaining values
-// to destCh, closes destCh, and returns.
-func PriorityChannel[T any](destCh chan<- T, sourceCh <-chan T, lessFunc func(T, T) bool) {
-	defer close(destCh)
-	heap := NewHeap(lessFunc)
+	outCh := make(chan T)
 
-	var valueToSend T
-	valueToSendValid := false
+	go func() {
+		defer close(outCh)
+		heap := NewHeap(lessFunc)
 
-	for {
-		// If we do not already have a value to send, get one. If the heap is
-		// empty then read one from sourceCh, otherwise chose the highest
-		// priority value from heap.
-		if !valueToSendValid {
-			var ok bool
-			valueToSend, ok = heap.Pop()
-			if !ok {
-				valueToSend, ok = <-sourceCh
+		var valueToSend T
+		valueToSendValid := false
+
+		for {
+			// If we do not already have a value to send, get one. If the heap
+			// is empty then read one from inCh, otherwise chose the highest
+			// priority value from heap.
+			if !valueToSendValid {
+				var ok bool
+				valueToSend, ok = heap.Pop()
 				if !ok {
-					// sourceCh was closed so we are done.
+					valueToSend, ok = <-inCh
+					if !ok {
+						// inCh was closed so we are done.
+						return
+					}
+				}
+				valueToSendValid = true //nolint:wastedassign
+			}
+
+			// Either write valueToSend to outCh or read a new value from inCh
+			// and update valueToSend.
+			select {
+			case outCh <- valueToSend:
+				// As valueToSend was sent, we need a new one.
+				valueToSendValid = false
+			case value, ok := <-inCh:
+				// As valueToSend was not sent, push it back onto the heap.
+				heap.Push(valueToSend)
+
+				// If inCh was closed then send the remaining values to outCh
+				// and return.
+				if !ok {
+					for value := range heap.All() {
+						outCh <- value
+					}
 					return
 				}
+
+				// Otherwise, add value to the heap and get the new value to send.
+				valueToSend = heap.PushPop(value)
+				valueToSendValid = true
 			}
-			valueToSendValid = true //nolint:wastedassign
 		}
+	}()
 
-		// Either write valueToSend to destCh or read a new value from sourceCh
-		// and update valueToSend.
-		select {
-		case destCh <- valueToSend:
-			// As valueToSend was sent, we need a new one.
-			valueToSendValid = false
-		case value, ok := <-sourceCh:
-			// As valueToSend was not sent, push it back onto the heap.
-			heap.Push(valueToSend)
-
-			// If sourceCh was closed then send the remaining values to destCh
-			// and return.
-			if !ok {
-				for value := range heap.All() {
-					destCh <- value
-				}
-				return
-			}
-
-			// Otherwise, add value to the heap and get the new value to send.
-			valueToSend = heap.PushPop(value)
-			valueToSendValid = true
-		}
-	}
+	return outCh
 }
