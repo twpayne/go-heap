@@ -7,17 +7,14 @@ import (
 	"slices"
 )
 
-// A LessFunc returns true if a is less than b.
-type LessFunc[T any] func(a, b T) bool
-
 // A Heap is a heap of Ts.
 type Heap[T any] struct {
-	lessFunc LessFunc[T]
+	lessFunc func(T, T) bool
 	values   []T
 }
 
 // NewHeap returns a new heap that uses lessFunc to compare elements.
-func NewHeap[T any](lessFunc LessFunc[T]) *Heap[T] {
+func NewHeap[T any](lessFunc func(T, T) bool) *Heap[T] {
 	return &Heap[T]{
 		lessFunc: lessFunc,
 	}
