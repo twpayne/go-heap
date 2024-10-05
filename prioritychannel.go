@@ -43,7 +43,7 @@ func PriorityChannel[T any](destCh chan<- T, sourceCh <-chan T, lessFunc func(T,
 			// If sourceCh was closed then send the remaining values to destCh
 			// and return.
 			if !ok {
-				for _, value := range heap.PopAll() {
+				for value := range heap.All() {
 					destCh <- value
 				}
 				return

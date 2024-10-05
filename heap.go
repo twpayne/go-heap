@@ -3,6 +3,7 @@ package heap
 
 import (
 	"cmp"
+	"iter"
 	"slices"
 )
 
@@ -33,6 +34,14 @@ func NewReverseOrderedHeap[T cmp.Ordered]() *Heap[T] {
 	return NewHeap(func(a, b T) bool {
 		return cmp.Less[T](b, a)
 	})
+}
+
+// All returns an iterator over all values in h.
+func (h *Heap[T]) All() iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for value, ok := h.Pop(); ok && yield(value); value, ok = h.Pop() { //nolint:revive
+		}
+	}
 }
 
 // Cap returns the underlying capacity of h.

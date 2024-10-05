@@ -184,3 +184,18 @@ func TestHeapFloat64s(t *testing.T) {
 	assert.Equal(t, 2, h.MustPop())
 	assert.Equal(t, math.Inf(1), h.MustPop())
 }
+
+func TestHeapAll(t *testing.T) {
+	h := heap.NewOrderedHeap[int]().PushMany(4, 2, 1, 0)
+	actual := make([]int, 0, 6)
+	for value := range h.All() {
+		switch value {
+		case 1:
+			h.Push(3)
+		case 2:
+			h.Push(5)
+		}
+		actual = append(actual, value)
+	}
+	assert.Equal(t, []int{0, 1, 2, 3, 4, 5}, actual)
+}
