@@ -118,3 +118,30 @@ func TestPriorityChannelCloseSourceDuringRead(t *testing.T) {
 	_, ok := <-outCh
 	assert.False(t, ok)
 }
+
+func TestBufferedPriorityChannel(t *testing.T) {
+	inCh := make(chan int)
+	outCh := heap.BufferedPriorityChannel(inCh, 4, func(a, b int) bool {
+		return a < b
+	})
+
+	go func() {
+		defer close(inCh)
+		for i := 9; i >= 0; i-- {
+			inCh <- i
+		}
+	}()
+
+	result := make([]int, 0, 10)
+	for value := range outCh {
+		result = append(result, value)
+	}
+
+	assert.Equal(t, []int{6, 5, 4, 3, 2, 1, 0, 7, 8, 9}, result)
+}
+
+func TestBufferedPriorityChannelInvalidSize(t *testing.T) {
+	assert.Panics(t, func() {
+		_ = heap.BufferedPriorityChannel[int](nil, -1, nil)
+	})
+}

@@ -5,8 +5,6 @@ package heap
 // returned first. When inCh is closed, all remaining values are written to the
 // returned channel, and then the returned channel is closed.
 func PriorityChannel[T any](inCh <-chan T, lessFunc func(T, T) bool) <-chan T {
-	// FIXME add channel sizes (i.e. min and max heap size)
-
 	outCh := make(chan T)
 
 	go func() {
@@ -56,6 +54,47 @@ func PriorityChannel[T any](inCh <-chan T, lessFunc func(T, T) bool) <-chan T {
 				valueToSend = heap.PushPop(value)
 				valueToSendValid = true
 			}
+		}
+	}()
+
+	return outCh
+}
+
+// BufferedPriorityChannel reads values from inCh and returns a channel that
+// returns the same values prioritized according to lessFunc, with lesser values
+// returned first. It maintains a buffer of size size, reading from inCh until
+// the buffer is full, and then returning the values in priority over the
+// returned channel, and reading more values from inCh when required. When inCh
+// is closed, all remaining values are written to the returned channel, and then
+// the returned channel is closed.
+func BufferedPriorityChannel[T any](inCh <-chan T, size int, lessFunc func(T, T) bool) <-chan T {
+	if size <= 0 {
+		panic("size out of range")
+	}
+
+	outCh := make(chan T)
+
+	go func() {
+		defer close(outCh)
+		heap := NewHeap(lessFunc)
+
+		for {
+			// Fill the heap with up to size values.
+			for range size - heap.Len() {
+				value, ok := <-inCh
+				if !ok {
+					// inCh was closed so we are done. Write all remaining
+					// values and return.
+					for value := range heap.All() {
+						outCh <- value
+					}
+					return
+				}
+				heap.Push(value)
+			}
+
+			// Send the least value.
+			outCh <- heap.MustPop()
 		}
 	}()
 
