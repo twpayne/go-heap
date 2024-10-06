@@ -33,14 +33,6 @@ func NewReverseOrderedHeap[T cmp.Ordered]() *Heap[T] {
 	})
 }
 
-// All returns an iterator over all values in h.
-func (h *Heap[T]) All() iter.Seq[T] {
-	return func(yield func(T) bool) {
-		for value, ok := h.Pop(); ok && yield(value); value, ok = h.Pop() { //nolint:revive
-		}
-	}
-}
-
 // Cap returns the underlying capacity of h.
 func (h *Heap[T]) Cap() int {
 	return cap(h.values)
@@ -107,15 +99,12 @@ func (h *Heap[T]) Pop() (T, bool) {
 	}
 }
 
-// PopAll pops and returns all values in h.
-func (h *Heap[T]) PopAll() []T {
-	n := len(h.values)
-	values := make([]T, 0, n)
-	for range n {
-		value, _ := h.Pop()
-		values = append(values, value)
+// PopAll returns an iterator that pops all values.
+func (h *Heap[T]) PopAll() iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for value, ok := h.Pop(); ok && yield(value); value, ok = h.Pop() { //nolint:revive
+		}
 	}
-	return values
 }
 
 // Push adds value to h in amortized O(N) time.

@@ -107,7 +107,7 @@ func TestRandomPermutations(t *testing.T) {
 				for _, value := range values {
 					h.Push(value)
 				}
-				assert.Equal(t, expected, h.PopAll())
+				assert.Equal(t, expected, nonNilSlice(slices.Collect(h.PopAll())))
 			})
 
 			slices.Reverse(expected)
@@ -116,7 +116,7 @@ func TestRandomPermutations(t *testing.T) {
 				for _, value := range values {
 					h.Push(value)
 				}
-				assert.Equal(t, expected, h.PopAll())
+				assert.Equal(t, expected, nonNilSlice(slices.Collect(h.PopAll())))
 			})
 		})
 	}
@@ -138,7 +138,7 @@ func TestSet(t *testing.T) {
 		h.Set(values)
 		expected := slices.Clone(values)
 		slices.Sort(expected)
-		assert.Equal(t, expected, h.PopAll())
+		assert.Equal(t, expected, nonNilSlice(slices.Collect(h.PopAll())))
 	}
 }
 
@@ -149,7 +149,7 @@ func TestPushPop(t *testing.T) {
 	assert.Equal(t, 1, h.PushPop(1))
 	assert.Equal(t, 2, h.PushPop(3))
 	h.PushMany(5, 4, 6)
-	assert.Equal(t, []int{3, 4, 5, 6}, h.PopAll())
+	assert.Equal(t, []int{3, 4, 5, 6}, slices.Collect(h.PopAll()))
 }
 
 func TestCapAndClip(t *testing.T) {
@@ -188,7 +188,7 @@ func TestHeapFloat64s(t *testing.T) {
 func TestHeapAll(t *testing.T) {
 	h := heap.NewOrderedHeap[int]().PushMany(4, 2, 1, 0)
 	actual := make([]int, 0, 6)
-	for value := range h.All() {
+	for value := range h.PopAll() {
 		switch value {
 		case 1:
 			h.Push(3)
@@ -198,4 +198,11 @@ func TestHeapAll(t *testing.T) {
 		actual = append(actual, value)
 	}
 	assert.Equal(t, []int{0, 1, 2, 3, 4, 5}, actual)
+}
+
+func nonNilSlice[E any, S []E](s S) S {
+	if len(s) == 0 {
+		return S{}
+	}
+	return s
 }

@@ -44,7 +44,7 @@ func PriorityChannel[T any](inCh <-chan T, lessFunc func(T, T) bool) <-chan T {
 				// If inCh was closed then send the remaining values to outCh
 				// and return.
 				if !ok {
-					for value := range heap.All() {
+					for value := range heap.PopAll() {
 						outCh <- value
 					}
 					return
@@ -85,7 +85,7 @@ func BufferedPriorityChannel[T any](inCh <-chan T, size int, lessFunc func(T, T)
 				if !ok {
 					// inCh was closed so we are done. Write all remaining
 					// values and return.
-					for value := range heap.All() {
+					for value := range heap.PopAll() {
 						outCh <- value
 					}
 					return
