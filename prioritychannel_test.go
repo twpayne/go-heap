@@ -145,3 +145,24 @@ func TestBufferedPriorityChannelInvalidSize(t *testing.T) {
 		_ = heap.BufferedPriorityChannel[int](nil, -1, nil)
 	})
 }
+
+func TestBufferedPriorityChannelNeverFull(t *testing.T) {
+	inCh := make(chan int)
+	outCh := heap.BufferedPriorityChannel(inCh, 4, func(a, b int) bool {
+		return a < b
+	})
+
+	go func() {
+		defer close(inCh)
+		for i := 2; i >= 0; i-- {
+			inCh <- i
+		}
+	}()
+
+	result := make([]int, 0, 2)
+	for value := range outCh {
+		result = append(result, value)
+	}
+
+	assert.Equal(t, []int{0, 1, 2}, result)
+}

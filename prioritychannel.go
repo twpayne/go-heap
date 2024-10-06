@@ -78,23 +78,36 @@ func BufferedPriorityChannel[T any](inCh <-chan T, size int, lessFunc func(T, T)
 		defer close(outCh)
 		heap := NewHeap(lessFunc)
 
-		for {
-			// Fill the heap with up to size values.
-			for range size - heap.Len() {
-				value, ok := <-inCh
-				if !ok {
-					// inCh was closed so we are done. Write all remaining
-					// values and return.
-					for value := range heap.PopAll() {
-						outCh <- value
-					}
-					return
-				}
-				heap.Push(value)
+		// Pre-fill the heap with up to size values.
+		for range size - heap.Len() {
+			value, ok := <-inCh
+			if !ok {
+				// inCh was closed so we are done.
+				goto DONE
 			}
+			heap.Push(value)
+		}
 
+		// FIXME use heap.PushPop
+
+		for {
 			// Send the least value.
-			outCh <- heap.MustPop()
+			value, _ := heap.Pop()
+			outCh <- value
+
+			// Read another value.
+			if value, ok := <-inCh; ok {
+				heap.Push(value)
+			} else {
+				// inCh was closed so we are done.
+				goto DONE
+			}
+		}
+
+	DONE:
+		// Write all remaining values.
+		for value := range heap.PopAll() {
+			outCh <- value
 		}
 	}()
 
