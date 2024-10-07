@@ -1,10 +1,16 @@
 package heap
 
+import "context"
+
 // PriorityChannel greedily reads values from inCh and returns a channel that
 // returns the same values prioritized according to lessFunc, with lesser values
-// returned first. When inCh is closed, all remaining values are written to the
-// returned channel, and then the returned channel is closed.
-func PriorityChannel[T any](inCh <-chan T, lessFunc func(T, T) bool) <-chan T {
+// returned first.
+//
+// When inCh is closed, all remaining values are written to the returned
+// channel, and then the returned channel is closed.
+//
+// If ctx is canceled then the returned channel is closed immediately.
+func PriorityChannel[T any](ctx context.Context, inCh <-chan T, lessFunc func(T, T) bool) <-chan T {
 	outCh := make(chan T)
 
 	go func() {
@@ -22,10 +28,14 @@ func PriorityChannel[T any](inCh <-chan T, lessFunc func(T, T) bool) <-chan T {
 				var ok bool
 				valueToSend, ok = heap.Pop()
 				if !ok {
-					valueToSend, ok = <-inCh
-					if !ok {
-						// inCh was closed so we are done.
+					select {
+					case <-ctx.Done():
 						return
+					case valueToSend, ok = <-inCh:
+						if !ok {
+							// inCh was closed so we are done.
+							return
+						}
 					}
 				}
 				valueToSendValid = true //nolint:wastedassign
@@ -34,6 +44,8 @@ func PriorityChannel[T any](inCh <-chan T, lessFunc func(T, T) bool) <-chan T {
 			// Either write valueToSend to outCh or read a new value from inCh
 			// and update valueToSend.
 			select {
+			case <-ctx.Done():
+				return
 			case outCh <- valueToSend:
 				// As valueToSend was sent, we need a new one.
 				valueToSendValid = false
@@ -50,7 +62,8 @@ func PriorityChannel[T any](inCh <-chan T, lessFunc func(T, T) bool) <-chan T {
 					return
 				}
 
-				// Otherwise, add value to the heap and get the new value to send.
+				// Otherwise, add value to the heap and get the new value to
+				// send.
 				valueToSend = heap.PushPop(value)
 				valueToSendValid = true
 			}
@@ -62,12 +75,16 @@ func PriorityChannel[T any](inCh <-chan T, lessFunc func(T, T) bool) <-chan T {
 
 // BufferedPriorityChannel reads values from inCh and returns a channel that
 // returns the same values prioritized according to lessFunc, with lesser values
-// returned first. It maintains a buffer of size size, reading from inCh until
-// the buffer is full, and then returning the values in priority over the
-// returned channel, and reading more values from inCh when required. When inCh
-// is closed, all remaining values are written to the returned channel, and then
-// the returned channel is closed.
-func BufferedPriorityChannel[T any](inCh <-chan T, size int, lessFunc func(T, T) bool) <-chan T {
+// returned first.
+//
+// It maintains a buffer of size size, reading from inCh until the buffer is
+// full, and then returning the values in priority over the returned channel,
+// and reading more values from inCh when required. When inCh is closed, all
+// remaining values are written to the returned channel, and then the returned
+// channel is closed.
+//
+// If ctx is canceled then the returned channel is closed immediately.
+func BufferedPriorityChannel[T any](ctx context.Context, inCh <-chan T, size int, lessFunc func(T, T) bool) <-chan T {
 	if size <= 0 {
 		panic("size out of range")
 	}
@@ -77,40 +94,54 @@ func BufferedPriorityChannel[T any](inCh <-chan T, size int, lessFunc func(T, T)
 	go func() {
 		defer close(outCh)
 		heap := NewHeap(lessFunc)
+		var leastValue T
 
 		// Pre-fill the heap with up to size values.
 		for range size {
-			value, ok := <-inCh
-			if !ok {
-				// inCh was closed so we are done. Write all remaining values
-				// and return.
-				for value := range heap.PopAll() {
-					outCh <- value
-				}
+			select {
+			case <-ctx.Done():
 				return
+			case value, ok := <-inCh:
+				if !ok {
+					goto DRAIN
+				}
+				heap.Push(value)
 			}
-			heap.Push(value)
 		}
 
 		// Prepare the least value to send.
-		leastValue, _ := heap.Pop()
+		leastValue, _ = heap.Pop()
 
 		// Main loop.
 		for {
 			// Send the least value.
-			outCh <- leastValue
+			select {
+			case <-ctx.Done():
+				return
+			case outCh <- leastValue:
+			}
 
 			// Read the next value from inCh and update the heap and least
 			// value.
-			if value, ok := <-inCh; ok {
-				leastValue = heap.PushPop(value)
-			} else {
-				// inCh was closed so we are done. Write all remaining values
-				// and return.
-				for value := range heap.PopAll() {
-					outCh <- value
-				}
+			select {
+			case <-ctx.Done():
 				return
+			case value, ok := <-inCh:
+				if !ok {
+					goto DRAIN
+				}
+				leastValue = heap.PushPop(value)
+			}
+		}
+
+	DRAIN:
+		// inCh was closed so we are done. Write all remaining values and
+		// return.
+		for value := range heap.PopAll() {
+			select {
+			case <-ctx.Done():
+				return
+			case outCh <- value:
 			}
 		}
 	}()
