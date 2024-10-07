@@ -11,7 +11,6 @@ linters:
   - containedctx
   - contextcheck
   - copyloopvar
-  - cyclop
   - decorder
   - dogsled
   - dupl
@@ -26,7 +25,6 @@ linters:
   - fatcontext
   - forbidigo
   - forcetypeassert
-  - funlen
   - gci
   - ginkgolinter
   - gocheckcompilerdirectives
@@ -97,7 +95,9 @@ linters:
   - wrapcheck
   - zerologlint
   disable:
+  - cyclop
   - depguard
+  - funlen
   - godox
   - gomnd
   - ireturn
