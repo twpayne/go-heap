@@ -1,6 +1,7 @@
 package heap_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/alecthomas/assert/v2"
@@ -9,8 +10,10 @@ import (
 )
 
 func TestPriorityOneValue(t *testing.T) {
+	ctx := context.Background()
+
 	inCh := make(chan int)
-	outCh := heap.PriorityChannel(inCh, func(a, b int) bool {
+	outCh := heap.PriorityChannel(ctx, inCh, func(a, b int) bool {
 		return a < b
 	})
 
@@ -23,8 +26,10 @@ func TestPriorityOneValue(t *testing.T) {
 }
 
 func TestPriorityReorderValues(t *testing.T) {
+	ctx := context.Background()
+
 	inCh := make(chan int)
-	outCh := heap.PriorityChannel(inCh, func(a, b int) bool {
+	outCh := heap.PriorityChannel(ctx, inCh, func(a, b int) bool {
 		return a < b
 	})
 
@@ -43,8 +48,10 @@ func TestPriorityReorderValues(t *testing.T) {
 }
 
 func TestPriorityMixedValueOrder(t *testing.T) {
+	ctx := context.Background()
+
 	inCh := make(chan int)
-	outCh := heap.PriorityChannel(inCh, func(a, b int) bool {
+	outCh := heap.PriorityChannel(ctx, inCh, func(a, b int) bool {
 		return a < b
 	})
 
@@ -73,8 +80,10 @@ func TestPriorityMixedValueOrder(t *testing.T) {
 }
 
 func TestPriorityChannelCloseSourceBeforeReading(t *testing.T) {
+	ctx := context.Background()
+
 	inCh := make(chan int)
-	outCh := heap.PriorityChannel(inCh, func(a, b int) bool {
+	outCh := heap.PriorityChannel(ctx, inCh, func(a, b int) bool {
 		return a < b
 	})
 
@@ -92,8 +101,10 @@ func TestPriorityChannelCloseSourceBeforeReading(t *testing.T) {
 }
 
 func TestPriorityChannelCloseSourceDuringRead(t *testing.T) {
+	ctx := context.Background()
+
 	inCh := make(chan int)
-	outCh := heap.PriorityChannel(inCh, func(a, b int) bool {
+	outCh := heap.PriorityChannel(ctx, inCh, func(a, b int) bool {
 		return a < b
 	})
 
@@ -120,8 +131,10 @@ func TestPriorityChannelCloseSourceDuringRead(t *testing.T) {
 }
 
 func TestBufferedPriorityChannel(t *testing.T) {
+	ctx := context.Background()
+
 	inCh := make(chan int)
-	outCh := heap.BufferedPriorityChannel(inCh, 4, func(a, b int) bool {
+	outCh := heap.BufferedPriorityChannel(ctx, inCh, 4, func(a, b int) bool {
 		return a < b
 	})
 
@@ -142,13 +155,15 @@ func TestBufferedPriorityChannel(t *testing.T) {
 
 func TestBufferedPriorityChannelInvalidSize(t *testing.T) {
 	assert.Panics(t, func() {
-		_ = heap.BufferedPriorityChannel[int](nil, -1, nil)
+		_ = heap.BufferedPriorityChannel[int](context.Background(), nil, -1, nil)
 	})
 }
 
 func TestBufferedPriorityChannelNeverFull(t *testing.T) {
+	ctx := context.Background()
+
 	inCh := make(chan int)
-	outCh := heap.BufferedPriorityChannel(inCh, 4, func(a, b int) bool {
+	outCh := heap.BufferedPriorityChannel(ctx, inCh, 4, func(a, b int) bool {
 		return a < b
 	})
 
@@ -165,4 +180,67 @@ func TestBufferedPriorityChannelNeverFull(t *testing.T) {
 	}
 
 	assert.Equal(t, []int{0, 1, 2}, result)
+}
+
+func TestBufferedPriorityChannelCancelDuringFill(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	inCh := make(chan int)
+	outCh := heap.BufferedPriorityChannel(ctx, inCh, 4, func(a, b int) bool {
+		return a < b
+	})
+
+	inCh <- 2
+	inCh <- 1
+	inCh <- 0
+	cancel()
+
+	_, ok := <-outCh
+	assert.False(t, ok)
+}
+
+func TestBufferedPriorityChannelCancelAfterFill(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	inCh := make(chan int)
+	outCh := heap.BufferedPriorityChannel(ctx, inCh, 4, func(a, b int) bool {
+		return a < b
+	})
+
+	inCh <- 3
+	inCh <- 2
+	inCh <- 1
+	inCh <- 0
+	close(inCh)
+
+	value, ok := <-outCh
+	assert.True(t, ok)
+	assert.Equal(t, 0, value)
+
+	cancel()
+}
+
+func TestBufferedPriorityChannelCancelDuringOperation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	inCh := make(chan int)
+	outCh := heap.BufferedPriorityChannel(ctx, inCh, 4, func(a, b int) bool {
+		return a < b
+	})
+
+	go func() {
+		defer close(inCh)
+		for i := 9; i >= 0; i-- {
+			select {
+			case <-ctx.Done():
+				return
+			case inCh <- i:
+			}
+		}
+	}()
+
+	assert.Equal(t, 6, <-outCh)
+	assert.Equal(t, 5, <-outCh)
+
+	cancel()
 }
