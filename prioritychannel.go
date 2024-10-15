@@ -57,7 +57,11 @@ func PriorityChannel[T any](ctx context.Context, inCh <-chan T, lessFunc func(T,
 				// and return.
 				if !ok {
 					for value := range heap.PopAll() {
-						outCh <- value
+						select {
+						case <-ctx.Done():
+							return
+						case outCh <- value:
+						}
 					}
 					return
 				}
