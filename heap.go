@@ -1,4 +1,4 @@
-// Package heaps implements a generic heap data structure.
+// Package heap implements a generic heap data structure.
 package heap
 
 import (
