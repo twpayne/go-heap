@@ -2,7 +2,9 @@ package heap_test
 
 import (
 	"context"
+	"strconv"
 	"testing"
+	"testing/synctest"
 
 	"github.com/alecthomas/assert/v2"
 
@@ -243,4 +245,99 @@ func TestBufferedPriorityChannelCancelDuringOperation(t *testing.T) {
 	assert.Equal(t, 5, <-outCh)
 
 	cancel()
+}
+
+func TestPriorityChannelImmediateCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	inCh := make(chan int)
+	outCh := heap.PriorityChannel(ctx, inCh, func(a, b int) bool {
+		return a < b
+	})
+
+	cancel()
+
+	_, ok := <-outCh
+	assert.False(t, ok)
+}
+
+func TestPriorityChannelCancel(t *testing.T) {
+	for n := range 5 {
+		t.Run(strconv.Itoa(n), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				ctx, cancel := context.WithCancel(context.Background())
+
+				inCh := make(chan int)
+				outCh := heap.PriorityChannel(ctx, inCh, func(a, b int) bool {
+					return a < b
+				})
+
+				go func() {
+					defer close(inCh)
+					for i := range n {
+						inCh <- i + 1
+					}
+				}()
+
+				synctest.Wait()
+				cancel()
+
+				_, ok := <-outCh
+				assert.False(t, ok)
+			})
+		})
+	}
+}
+
+func TestBufferedPriorityChannelCancel(t *testing.T) {
+	for n := range 5 {
+		t.Run(strconv.Itoa(n), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				ctx, cancel := context.WithCancel(context.Background())
+
+				inCh := make(chan int)
+				outCh := heap.BufferedPriorityChannel(ctx, inCh, 3, func(a, b int) bool {
+					return a < b
+				})
+
+				go func() {
+					defer close(inCh)
+					for i := range n {
+						select {
+						case <-ctx.Done():
+							return
+						case inCh <- i + 1:
+						}
+					}
+				}()
+
+				synctest.Wait()
+				cancel()
+
+				_, ok := <-outCh
+				assert.False(t, ok)
+			})
+		})
+	}
+}
+
+func TestBufferedPriorityChannelDrain(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	inCh := make(chan int)
+	outCh := heap.BufferedPriorityChannel(ctx, inCh, 3, func(a, b int) bool {
+		return a < b
+	})
+
+	inCh <- 3
+	inCh <- 2
+	inCh <- 1
+	close(inCh)
+
+	assert.Equal(t, 1, <-outCh)
+	assert.Equal(t, 2, <-outCh)
+	assert.Equal(t, 3, <-outCh)
+	_, ok := <-outCh
+	assert.False(t, ok)
 }
