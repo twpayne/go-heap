@@ -136,6 +136,21 @@ func (h *Heap[T]) PushPop(value T) T {
 	return value
 }
 
+// PushManyPop pushes values onto the heap and then pops the lowest value off
+// the heap and returns it in O(N) time. It is slightly more efficient than
+// separate calls to [Heap.PushMany] and [Heap.Pop].
+func (h *Heap[T]) PushManyPop(values ...T) (T, bool) {
+	switch len(values) {
+	case 0:
+		return h.Pop()
+	case 1:
+		return h.PushPop(values[0]), true
+	default:
+		h.PushMany(values[1:]...)
+		return h.PushPop(values[0]), true
+	}
+}
+
 // Set sets the values on h to be values in amortized O(N) time. h takes
 // ownership of values.
 func (h *Heap[T]) Set(values []T) *Heap[T] {

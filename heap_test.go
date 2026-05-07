@@ -200,6 +200,46 @@ func TestHeapAll(t *testing.T) {
 	assert.Equal(t, []int{0, 1, 2, 3, 4, 5}, actual)
 }
 
+func TestHeapPushManyPop(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		initial    []int
+		values     []int
+		expected   int
+		expectedOK bool
+	}{
+		{
+			name: "empty",
+		},
+		{
+			name:       "empty_push_one",
+			values:     []int{1},
+			expected:   1,
+			expectedOK: true,
+		},
+		{
+			name:       "one_value_push_empty",
+			initial:    []int{1},
+			expected:   1,
+			expectedOK: true,
+		},
+		{
+			name:       "many_values_push_many",
+			initial:    []int{6, 5, 4},
+			values:     []int{3, 2, 1},
+			expected:   1,
+			expectedOK: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := heap.NewOrderedHeap[int]().PushMany(tc.initial...)
+			actual, actualOK := h.PushManyPop(tc.values...)
+			assert.Equal(t, tc.expected, actual)
+			assert.Equal(t, tc.expectedOK, actualOK)
+		})
+	}
+}
+
 func nonNilSlice[E any, S []E](s S) S {
 	if len(s) == 0 {
 		return S{}
